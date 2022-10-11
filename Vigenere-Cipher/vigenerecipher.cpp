@@ -1,13 +1,17 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <limits>
 #include <string>
+#include <vector>
+
+// butuh buat bikin tabula recta
+// https://crypto.interactive-maths.com/autokey-cipher.html
+typedef std::vector<std::vector<char>> matrixC;
 
 void menu();
-void encryption(std::string, std::string, bool);
-void decryption(std::string, std::string, bool);
-std::string generateKey(std::string, std::string, bool);
+void encryption(std::string, std::string, bool, matrixC);
+void decryption(std::string, std::string, bool, matrixC);
+matrixC generateTabulaRecta();
 void refreshUi();
 
 int main() {
@@ -33,6 +37,7 @@ void menu() {
   std::string message, key;
   char flag;
   bool autokey = false;
+  matrixC tabula = generateTabulaRecta();
   std::cout << "Message\t\t> ";
   getline(std::cin, message);
   std::cout << "Key\t\t> ";
@@ -62,10 +67,10 @@ void menu() {
 
   switch (op) {
   case 1:
-    encryption(message, key, autokey);
+    encryption(message, key, autokey, tabula);
     break;
   case 2:
-    decryption(message, key, autokey);
+    decryption(message, key, autokey, tabula);
     break;
   default:
     std::cout << "Invalid operation, please try again\n";
@@ -73,69 +78,83 @@ void menu() {
   }
 }
 
-std::string generateKey(std::string message, std::string key, bool autokey) {
-  int mLen = message.size();
-
-  if (autokey) {
-    for (int i = 0;; i++) {
-      if (mLen == i)
-        i = 0;
-      if (key.size() == mLen)
-        break;
-      key.push_back(message[i]);
-    }
-  } else {
-    for (int i = 0;; i++) {
-      if (mLen == i)
-        i = 0;
-      if (key.size() == mLen)
-        break;
-      key.push_back(key[i]);
+matrixC generateTabulaRecta() {
+  matrixC tabula(26, std::vector<char>(26));
+  int i, j, k = 0, n = 26;
+  for (i = 0; i < n; i++) {
+    k = i;
+    for (j = 0; j < n; j++) {
+      tabula[i][j] = 'A' + k;
+      k++;
+      if (k == 26)
+        k = 0;
     }
   }
-
-  return key;
+  return tabula;
 }
 
-void encryption(std::string message, std::string key, bool autokey) {
-  std::string newKey = generateKey(message, key, autokey);
+void encryption(std::string message, std::string key, bool autokey,
+                matrixC tabula) {
   std::cout << "\n:: Enkripsi >\n";
   std::cout << "PT\t: " << message << '\n';
-  std::cout << "K\t: " << newKey << "\n";
+  std::cout << "K\t: " << key << "\n";
 
   std::string hasil = "";
 
+  int mod;
+  if (autokey) {
+    mod = message.size();
+  } else {
+    mod = key.size();
+  }
+
+  int k = 0;
   for (int i = 0; i < message.size(); i++) {
-    int c = (message[i] + newKey[i]) % 26;
-    hasil.push_back(char(c + 65));
+    char c = tabula[message[i] - 'A'][key[i] - 'A'];
+    if (autokey) {
+      key.push_back(message[k % mod]);
+    } else {
+      key.push_back(key[k % mod]);
+    }
+    hasil.push_back(c);
+    k++;
   }
 
   std::cout << "\nEnkripsi cipher code >\n" << hasil << '\n';
 }
-void decryption(std::string message, std::string key, bool autokey) {
-  // dekripsi autokey sekarang mentok sampe 2x panjang key...
-  std::string hasil = message;
-  std::string newKey;
 
-  if (autokey) {
-    for (int i = 0; i < key.size(); i++) {
-      int c = (message[i] - key[i] + 26) % 26;
-      hasil[i] = (char(c + 65));
-    }
-    newKey = generateKey(hasil, key, autokey);
-  } else {
-    newKey = generateKey(message, key, autokey);
-  }
+void decryption(std::string message, std::string key, bool autokey,
+                matrixC tabula) {
+  std::string hasil = message;
 
   std::cout << "\n:: Dekripsi >\n";
   std::cout << "CT\t: " << message << '\n';
-  std::cout << "K\t: " << newKey << "\n";
+  std::cout << "K\t: " << key << "\n";
 
   hasil = "";
 
+  int mod;
+  if (autokey) {
+    mod = message.size();
+  } else {
+    mod = key.size();
+  }
+
+  int k = 0;
   for (int i = 0; i < message.size(); i++) {
-    int c = (message[i] - newKey[i] + 26) % 26;
-    hasil.push_back(char(c + 65));
+    for (int j = 0; j < 26; j++) {
+      if (tabula[j][key[i] - 'A'] == message[i]) {
+        char c = 'A' + j;
+        if (autokey) {
+          key.push_back(c);
+        } else {
+          key.push_back(key[k % mod]);
+        }
+        hasil.push_back(c);
+        k++;
+        break;
+      }
+    }
   }
 
   std::cout << "\nDekripsi plain text >\n" << hasil << '\n';
