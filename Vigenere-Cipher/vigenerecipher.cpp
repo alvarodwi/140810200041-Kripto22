@@ -113,13 +113,25 @@ void encryption(std::string message, std::string key, bool autokey) {
   std::cout << "\nEnkripsi cipher code >\n" << hasil << '\n';
 }
 void decryption(std::string message, std::string key, bool autokey) {
-  // dekripsi autokey bakal sedikit rusak...
-  std::string newKey = generateKey(message, key, autokey);
+  // dekripsi autokey sekarang mentok sampe 2x panjang key...
+  std::string hasil = message;
+  std::string newKey;
+
+  if (autokey) {
+    for (int i = 0; i < key.size(); i++) {
+      int c = (message[i] - key[i] + 26) % 26;
+      hasil[i] = (char(c + 65));
+    }
+    newKey = generateKey(hasil, key, autokey);
+  } else {
+    newKey = generateKey(message, key, autokey);
+  }
+
   std::cout << "\n:: Dekripsi >\n";
   std::cout << "CT\t: " << message << '\n';
   std::cout << "K\t: " << newKey << "\n";
 
-  std::string hasil = "";
+  hasil = "";
 
   for (int i = 0; i < message.size(); i++) {
     int c = (message[i] - newKey[i] + 26) % 26;
